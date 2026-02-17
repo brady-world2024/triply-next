@@ -1,0 +1,15 @@
+.timeline :global(.vertical-timeline-element-content) {
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  padding: 16px;
+}
+
+.timeline :global(.vertical-timeline-element-title) {
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.timeline :global(.vertical-timeline-element-subtitle) {
+  font-size: 0.85rem;
+  color: #666;
+}
