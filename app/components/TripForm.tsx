@@ -56,23 +56,24 @@ export default function TripForm() {
 
   const onSubmit = async (values: TripRequest) => {
     try {
-      const { tripId, shareUrl } = await postTrip(values);
+      const { tripId } = await postTrip(values);
 
-      toast.success("Trip created", {
-        description: shareUrl ? "Share link ready." : "Generated successfully.",
-      });
-
+      toast.success("Trip created");
       router.push(`/trip/${tripId}`);
     } catch (e: unknown) {
-
-      console.error("[TripForm] postTrip failed:", e);
-
       const msg =
         e instanceof Error
           ? e.message
           : typeof e === "string"
-          ? e
-          : JSON.stringify(e);
+            ? e
+            : "Create failed";
+
+
+      if (msg.includes("HTTP 401")) {
+        toast.error("Please login first");
+        router.push("/login");
+        return;
+      }
 
       toast.error("Create failed", { description: msg });
     }
@@ -112,7 +113,6 @@ export default function TripForm() {
         </div>
       </div>
 
-      
       <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
         <div className="grid gap-2">
           <Label>Preference</Label>
@@ -132,11 +132,6 @@ export default function TripForm() {
               </Select>
             )}
           />
-          {errors.preference && (
-            <p className="text-sm text-destructive">
-              {errors.preference.message}
-            </p>
-          )}
         </div>
 
         <div className="grid gap-2">
@@ -160,9 +155,6 @@ export default function TripForm() {
               </Select>
             )}
           />
-          {errors.theme && (
-            <p className="text-sm text-destructive">{errors.theme.message}</p>
-          )}
         </div>
 
         <div className="grid gap-2">
@@ -185,11 +177,6 @@ export default function TripForm() {
               </Select>
             )}
           />
-          {errors.localTravel && (
-            <p className="text-sm text-destructive">
-              {errors.localTravel.message}
-            </p>
-          )}
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { getTrip } from "@/app/lib/api";
 import type { TripData } from "@/app/lib/tripSchema";
 
@@ -9,7 +9,16 @@ import DayPlanSheet from "@/app/components/DayPlanSheet";
 import ShareBar from "@/app/components/ShareBar";
 import { Card, CardContent } from "@/components/ui/card";
 
+function parseHttpStatus(msg: string): number | null {
+  // To ensure compatibility, formatError() returns: "HTTP 401: ..."
+  const m = msg.match(/HTTP\s+(\d{3})/i);
+  if (!m) return null;
+  const code = Number(m[1]);
+  return Number.isFinite(code) ? code : null;
+}
+
 export default function TripDetailPage() {
+  const router = useRouter();
   const params = useParams<{ id: string }>();
   const tripId = params?.id;
 
@@ -32,10 +41,26 @@ export default function TripDetailPage() {
         const data = await getTrip(tripId);
         setTrip(data);
       } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : "Failed to load trip");
+        const msg = e instanceof Error ? e.message : "Failed to load trip";
+
+        const status = parseHttpStatus(msg);
+
+        //  Not logged in: Redirect directly to login with a next button for backtracking.
+        if (status === 401) {
+          router.replace(`/login?next=/trip/${tripId}`);
+          return;
+        }
+
+        // Only a 404 error will display "not found"
+        if (status === 404) {
+          setError("Trip not found.");
+          return;
+        }
+
+        setError(msg);
       }
     })();
-  }, [tripId]);
+  }, [tripId, router]);
 
   if (!tripId) return <p>Loading…</p>;
   if (error) return <p className="text-destructive">{error}</p>;
@@ -43,7 +68,6 @@ export default function TripDetailPage() {
 
   const startDate = trip.itinerary?.[0]?.date ?? "";
   const endDate = trip.itinerary?.at?.(-1)?.date ?? "";
-
 
   const destinationGuess =
     trip.itinerary?.[0]?.schedule?.[0]?.place?.mapQuery ||
