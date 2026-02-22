@@ -9,6 +9,7 @@ import { listTrips, type TripSummary } from "@/app/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { handleUnauthorized } from "@/app/lib/requireAuth";
 
 function fmtDate(s: string) {
 // Backend might return an ISO string of timestamptz
@@ -30,8 +31,8 @@ export default function TripsPage() {
         const msg = e instanceof Error ? e.message : "Failed to load trips";
 
         if (msg.includes("HTTP 401")) {
-           router.replace("/login?next=/trips");
-           return;
+            handleUnauthorized("/trips");
+            return;
         
         } else {
           toast.error("Load failed", { description: msg });

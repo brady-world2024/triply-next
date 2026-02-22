@@ -8,6 +8,8 @@ import type { TripData } from "@/app/lib/tripSchema";
 import DayPlanSheet from "@/app/components/DayPlanSheet";
 import ShareBar from "@/app/components/ShareBar";
 import { Card, CardContent } from "@/components/ui/card";
+import { handleUnauthorized } from "@/app/lib/requireAuth";
+
 
 function parseHttpStatus(msg: string): number | null {
   // To ensure compatibility, formatError() returns: "HTTP 401: ..."
@@ -47,8 +49,8 @@ export default function TripDetailPage() {
 
         //  Not logged in: Redirect directly to login with a next button for backtracking.
         if (status === 401) {
-          router.replace(`/login?next=/trip/${tripId}`);
-          return;
+        handleUnauthorized(`/trip/${tripId}`);
+        return;
         }
 
         // Only a 404 error will display "not found"

@@ -12,9 +12,18 @@ export type ApiError = {
   requestId?: string;
 };
 
+const TOKEN_KEY = "triply_token";
+let redirecting = false;
+
+function clearToken() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(TOKEN_KEY);
+  window.dispatchEvent(new Event("triply:auth"));
+}
+
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("triply_token");
+  return localStorage.getItem(TOKEN_KEY);
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -44,7 +53,6 @@ function toApiError(err: unknown): ApiError {
       requestId,
     };
   }
-
   if (err instanceof Error) return { message: err.message };
   return { message: "Unknown error" };
 }
@@ -65,10 +73,37 @@ export function createHttpClient(): AxiosInstance {
     return config;
   });
 
-  client.interceptors.response.use(
-    (resp) => resp,
-    (err) => Promise.reject(toApiError(err)),
-  );
+
+client.interceptors.response.use(
+  (resp) => resp,
+  (err) => {
+
+    if (typeof window !== "undefined") {
+      const p = window.location.pathname;
+      if (p.startsWith("/login") || p.startsWith("/register")) {
+        redirecting = false;
+      }
+    }
+
+    const apiErr = toApiError(err);
+
+    if (apiErr.status === 401 && typeof window !== "undefined") {
+      clearToken();
+
+      const path = window.location.pathname;
+      const isAuthPage =
+        path.startsWith("/login") || path.startsWith("/register");
+
+      if (!redirecting && !isAuthPage) {
+        redirecting = true;
+        const next = encodeURIComponent(path + window.location.search);
+        window.location.replace(`/login?next=${next}`);
+      }
+    }
+
+    return Promise.reject(apiErr);
+  },
+);
 
   return client;
 }
